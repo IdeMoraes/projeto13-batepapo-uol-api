@@ -51,7 +51,7 @@ app.post('/participants', async (req,res) => {
     }
 });
 
-app.get('/participants', async (req, res) => {
+app.get('/participants', async (req,res) => {
     try {
       const participantes = await db.collection('participantes').find().toArray();
       res.send(participantes);
@@ -85,6 +85,25 @@ app.post('/messages', async (req,res)=>{
             time: dayjs().format('HH:mm:ss')
         })
         res.sendStatus(201);
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+app.get('/messages', async (req,res)=>{
+    const limite = parseInt(req.query.limit);
+    const usuario = req.headers.user;
+    try {
+        const mensagens = await db.collection('mensagens').find().toArray();
+        const mensagensFiltradas = mensagens.filter(mensagem=>{
+            return mensagem.to === usuario || mensagem.from === usuario || mensagem.to === 'Todos' || mensagem.type === 'message'
+        });
+        if (limite && limite !== NaN) {
+            return res.send(mensagensFiltradas.slice(-limite));
+          }
+        else{
+            return res.send(mensagensFiltradas);
+        }
     } catch (error) {
         console.log(error);
     }
