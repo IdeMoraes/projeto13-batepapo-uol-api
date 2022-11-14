@@ -109,6 +109,32 @@ app.get('/messages', async (req,res)=>{
     }
 });
 
+app.post('/status', async (req,res)=>{
+    const usuario = req.headers.user;
+    try {
+        const usuarioVerificado = await db.collection('participantes').findOne({name: usuario});
+        if (!usuarioVerificado){
+            return res.sendStatus(404);
+        }
+        await db.collection('participantes').updateOne({name:usuario},{$set: {lastStatus: Date.now()}});
+        res.sendStatus(200);
+    } catch (error) {
+        console.log(error);
+        
+    }
+});
+
+setInterval(async ()=>{
+    const tempoMenos10 = Date.now() - 10000;
+    try {
+        const participantes = await db.collection('participantes').find().toArray();
+        const participantesInativos = participantes.filter(participante => participante.lastStatus <= tempoMenos10);
+        await participantsCollection.deleteMany({ lastStatus: { $lte: tempoMenos10 } }); //$lte is a operator from MongoDB and it means less than or equal 
+    } catch (error) {
+        console.log(error);
+    }
+}, 15000);
+
 app.listen(porta,()=>{
     console.log(`Servidor aberto na porta ${chalk.blue(porta)}`)
 });
