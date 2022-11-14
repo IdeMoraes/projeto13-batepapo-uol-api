@@ -51,6 +51,15 @@ app.post('/participants', async (req,res) => {
     }
 });
 
+app.get('/participants', async (req, res) => {
+    try {
+      const participantes = await db.collection('participantes').find().toArray();
+      res.send(participantes);
+    } catch (error) {
+      console.error({ error });
+    }
+});
+
 app.listen(porta,()=>{
     console.log(`Servidor aberto na porta ${chalk.blue(porta)}`)
 });
