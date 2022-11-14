@@ -60,6 +60,36 @@ app.get('/participants', async (req, res) => {
     }
 });
 
+app.post('/messages', async (req,res)=>{
+    const mensagem = req.body;
+    const remetente = req.headers.user;
+    const mensagemSchema = joi.object({
+        to: joi.string().required(),
+        text: joi.string().required(),
+        type: joi.string().valid('message','private_message')
+    });
+    const {error} = mensagemSchema.validate(mensagem);
+    if(error){
+        return res.sendStatus(422);
+    }
+    try {
+        const remetenteVerificado = await db.collection('participantes').findOne({name: remetente});
+        if(!remetenteVerificado){
+            return res.sendStatus(422);
+        }
+        await db.collection('mensagens').insertOne({
+            from: remetente,
+            to: mensagem.to,
+            text: mensagem.text,
+            type: mensagem.type,
+            time: dayjs().format('HH:mm:ss')
+        })
+        res.sendStatus(201);
+    } catch (error) {
+        console.log(error);
+    }
+});
+
 app.listen(porta,()=>{
     console.log(`Servidor aberto na porta ${chalk.blue(porta)}`)
 });
