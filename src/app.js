@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
+import joi from 'joi';
+import dayjs from 'dayjs';
 
 const app = express();
 app.use(cors());
@@ -21,6 +23,32 @@ mongoClient.connect().then(() => {
 mongoClient.connect().catch((e) => {
     console.log(`Erro ao tentar conexão com o MongoDB`);
     console.log(e);
+});
+
+app.post('/participants', async (req,res) => {
+    const participante = req.body;
+    const participanteSchema = joi.object({name: joi.string().required()});
+    const {error} = participanteSchema.validate(participante)
+    if(error){
+        return res.status(422).send("Nome deve ser uma string não vazia");
+    }
+    try {
+        const nomeRepetido = await db.collection("participantes").findOne({name: participante.name});
+        if(nomeRepetido){
+            return res.status(409).send("Esse nome já está sendo utilizado");
+        }
+        await db.collection("participantes").insertOne({name: participante.name, lastStatus: Date.now()});
+        await db.collection("mensagens").insertOne({
+            from: participante.name, 
+            to: 'Todos', 
+            text: 'entra na sala...', 
+            type: 'status', 
+            time: dayjs().format('HH:mm:ss')
+        });
+        res.sendStatus(201);
+    } catch (error) {
+        console.log(error);
+    }
 });
 
 app.listen(porta,()=>{
